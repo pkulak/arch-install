@@ -1,6 +1,3 @@
-
-INSTALL_MODE=host # installation mode (vagrant|host)
-
 # Disk & Partition
 DISK_TYPE=ssd # disk type (hdd|ssd)
 DISK=/dev/nvme0n1
@@ -11,18 +8,12 @@ LUKS_NAME=archroot
 BTRFS_NAME=archroot
 
 # Grub
-GRUB_EFI_FALLBACK="--removable"
 GRUB_BOOT_NAME="Arch"
 
-# Locale
-DEFAULT_LOCALE="fr_FR.UTF-8 UTF-8"
-DEFAULT_LANG="fr_FR.UTF-8"
-
 # User & Host
-USER_NAME=usernix
-USER_PASSWORD=usernix
-USER_SHELL=zsh
-HOSTNAME=hostnix
+USER_NAME=phil
+USER_PASSWORD=mypassword
+HOSTNAME=conrad
 
 # Kernel
 CPU_TYPE=intel

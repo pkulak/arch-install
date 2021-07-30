@@ -48,43 +48,65 @@ if [ "$DISK_TYPE" = "ssd" ]; then
     BTRFS_SSD_OPTION="ssd,"
 fi
 
-opts_btrfs="${BTRFS_SSD_OPTION}defaults,noatime,nodiratime,compress=zstd"
+opts_btrfs="${BTRFS_SSD_OPTION}defaults,noatime,nodiratime,compress-force=zstd,autodefrag"
 mount -o $opts_btrfs /dev/mapper/$LUKS_NAME /mnt
 
 # Create BTRFS partitions
 cd /mnt
 
 # Create subvol
-btrfs subvolume create @
-btrfs subvolume create @/home
-btrfs subvolume create @/var
-# btrfs subvolume create @/var/log
+btrfs subvolume create @hometop
+btrfs subvolume create @roottop
+btrfs subvolume create @vlogtop
+btrfs subvolume create @vcchtop
 
-# Disable copy-on-write for var
-chattr +C /mnt/@/var
+mkdir @hometop/live
+mkdir @roottop/live
+
+btrfs su cr @hometop/live/snapshot
+btrfs su cr @roottop/live/snapshot
+
+# Disable copy-on-write for logs and cache
+chattr +C @vlogtop
+chattr +C @vcchtop
 
 # umount all paritions
 cd $OLDPWD
 umount -R /mnt
 
 # Mount vols
-mount -o $opts_btrfs,subvol=@ /dev/mapper/$LUKS_NAME /mnt
-mount -o $opts_btrfs,subvol=@/home /dev/mapper/$LUKS_NAME /mnt/home
-mount -o $opts_btrfs,subvol=@/var /dev/mapper/$LUKS_NAME /mnt/var
-mkdir -p /mnt//boot/efi
-mount $BOOT_PARTITION /mnt/boot/efi
+mount -o $opts_btrfs,subvol=@roottop/live/snapshot /dev/mapper/$LUKS_NAME /mnt
+mkdir -p /mnt/{boot,home,var/log,var/cache,.snapshots}
+mount -o $opts_btrfs,subvol=@hometop/live/snapshot /dev/mapper/$LUKS_NAME /mnt/home
+mount -o $opts_btrfs,subvol=@roottop /dev/mapper/$LUKS_NAME /mnt/.snapshots
+mkdir -p /mnt/home/.snapshots
+mount -o $opts_btrfs,subvol=@hometop /dev/mapper/$LUKS_NAME /mnt/home/.snapshots
+mount -o $opts_btrfs,subvol=@vlogtop /dev/mapper/$LUKS_NAME /mnt/var/log
+mount -o $opts_btrfs,subvol=@vcchtop /dev/mapper/$LUKS_NAME /mnt/var/cache
+mount $BOOT_PARTITION /mnt/boot
+
+# Make a swapfile
+cd /mnt/var/cache
+truncate -s 0 swapfile
+chattr +C swapfile
+btrfs property set swapfile compression none
+dd if=/dev/zero of=swapfile bs=1M count=2048 status=progress
+chmod 600 swapfile
+mkswap swapfile
+swapon swapfile
+cd $OLDPWD
 
 #######################################
 # System installation
 #######################################
 
 # Minimal installation
-pacstrap /mnt base base-devel git lvm2 btrfs-progs efibootmgr grub grub-btrfs net-tools wireless_tools dialog wpa_supplicant
+pacstrap /mnt base base-devel git
 
 # Generate fstab
 genfstab -U -p /mnt >> /mnt/etc/fstab
 
-# Mount in memory for sensitive datas (from config)
+# Mount sensitive data in memory
 mkdir -p /root/tmp
 mount ramfs /root/tmp -t ramfs
 
@@ -99,3 +121,4 @@ mount --bind /root/tmp /mnt/root/tmp
 
 arch-chroot /mnt /root/tmp/install/configure-user.sh
 arch-chroot /mnt /root/tmp/install/prepare-boot.sh
+arch-chroot /mnt /root/tmp/install/custom-setup.sh
