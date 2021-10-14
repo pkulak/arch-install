@@ -17,7 +17,7 @@ cd /tmp
 su $USER_NAME -c "git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -sri --noconfirm"
 
 # Install packages
-su $USER_NAME -c "yay --noconfirm -Syu ${CPU_TYPE}-ucode linux-zen linux-zen-headers linux-firmware mkinitcpio efibootmgr grub os-prober mtools dosfstools iwd pacman-contrib snapper snap-pac"
+su $USER_NAME -c "yay --noconfirm -Syu ${CPU_TYPE}-ucode linux linux-headers linux-firmware mkinitcpio efibootmgr grub os-prober mtools dosfstools iwd pacman-contrib snapper snap-pac"
 
 # Host
 echo "$HOSTNAME" > /etc/hostname
@@ -89,7 +89,7 @@ systemctl enable snapper-cleanup.timer
 # Kernel
 echo "HOOKS=(base udev autodetect keyboard modconf block encrypt filesystems fsck)" >> /etc/mkinitcpio.conf
 
-mkinitcpio -p linux-zen
+mkinitcpio -p linux
 
 LUKS_UUID=$(blkid $LUKS_PARTITION -o value | head -n1)
 cat << EOF > /etc/default/grub
