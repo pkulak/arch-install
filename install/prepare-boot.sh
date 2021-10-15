@@ -42,6 +42,7 @@ EOF
 
 systemctl enable iwd
 
+ln -s /usr/share/zoneinfo/US/Pacific /etc/localtime
 timedatectl set-ntp on
 
 systemctl enable paccache.timer
